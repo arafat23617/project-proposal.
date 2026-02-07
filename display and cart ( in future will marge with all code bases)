@@ -1,0 +1,109 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <iomanip>
+#include <map>
+#include <ctime>
+using namespace std;
+
+const string USER1 = "arif";
+const int PASS1 = 1234;
+const string USER2 = "admin";
+const int PASS2 = 4567;
+
+// Product structure
+struct Product {
+    string name;
+    int price;
+    int quantity;
+};
+
+// Cart item structure
+struct CartItem {
+    Product product;
+    int quantity;
+    string category;
+};
+
+// Product lists
+vector<Product> computers = {
+    {"Gaming Laptop", 1200, 10},
+    {"Mechanical Keyboard", 150, 25},
+    {"Wireless Mouse", 45, 50}
+};
+
+vector<Product> mobiles = {
+    {"iPhone 14", 999, 15},
+    {"Samsung Galaxy S23", 850, 20},
+    {"OnePlus 11", 700, 30}
+};
+
+// Shopping cart - uses (category, index) as key
+map<pair<string, int>, CartItem> cart;
+
+void printHeader(const string& title) {
+    cout << "\n========================================";
+    cout << "\n         " << title;
+    cout << "\n========================================\n";
+}
+
+void loadProducts() {
+    // In a real implementation, you would load from files here
+    // For now using the default initialized products
+}
+
+void displayProducts(const vector<Product>& products, const string& category) {
+    printHeader(category + " PRODUCTS");
+    cout << "\n" << setw(4) << left << "#"
+         << setw(25) << left << "Name"
+         << setw(10) << left << "Price"
+         << setw(10) << left << "In Stock" << "\n";
+    cout << string(50, '-') << "\n";
+
+    for (size_t i = 0; i < products.size(); ++i) {
+        cout << setw(4) << left << i + 1
+             << setw(25) << left << products[i].name
+             << "$" << setw(9) << left << products[i].price
+             << setw(10) << left << products[i].quantity << "\n";
+    }
+}
+
+void addToCart(const vector<Product>& products, const string& category) {
+    displayProducts(products, category);
+    int productIdx, quantity;
+
+    cout << "\nEnter product number to add to cart (0 to cancel): ";
+    cin >> productIdx;
+
+    if (productIdx < 1 || productIdx > static_cast<int>(products.size())) {
+        if (productIdx != 0) cout << "Invalid product number.\n";
+        return;
+    }
+
+    cout << "Enter quantity: ";
+    cin >> quantity;
+
+    if (quantity <= 0) {
+        cout << "Quantity must be positive.\n";
+        return;
+    }
+
+    if (quantity > products[productIdx-1].quantity) {
+        cout << "Not enough stock available.\n";
+        return;
+    }
+
+    // Create unique key for cart
+    auto key = make_pair(category, productIdx-1);
+
+    // Add or update cart
+    if (cart.count(key)) {
+        cart[key].quantity += quantity;
+    } else {
+        cart[key] = {products[productIdx-1], quantity, category};
+    }
+
+    cout << "\n✔ " << quantity << " x " << products[productIdx-1].name << " added to cart.\n";
+}
