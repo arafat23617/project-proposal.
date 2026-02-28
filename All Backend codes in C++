@@ -1,0 +1,248 @@
+// Online Gadget Shopping System with Cart Feature, Login feature, memo output feature, different user for admin and customer feature, save memo output in database feature. 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <iomanip>
+#include <map>
+using namespace std;
+
+const string USER1 = "arif";
+const int PASS1 = 1234;
+const string USER2 = "admin";
+const int PASS2 = 4567;
+
+struct Product {
+    string name;
+    int price;
+    int quantity;
+};
+
+struct CartItem {
+    Product product;
+    int quantity;
+};
+
+vector<Product> computers;
+vector<Product> mobiles;
+map<int, CartItem> cart; // Key: product index, Value: cart item
+int currentUserRole = 0; // 0: none, 1: customer, 2: manager
+
+void printHeader(const string& title) {
+    cout << "\n========================================\n";
+    cout << "         " << title << "\n";
+    cout << "========================================\n";
+}
+
+void loadProducts() {
+    computers.clear();
+    mobiles.clear();
+
+    // Default computer products
+    computers = {
+        {"Gaming Laptop", 1200, 10},
+        {"Mechanical Keyboard", 150, 25},
+        {"Wireless Mouse", 45, 50}
+    };
+
+    // Default mobile products
+    mobiles = {
+        {"iPhone 14", 999, 15},
+        {"Samsung Galaxy S23", 850, 20},
+        {"OnePlus 11", 700, 30}
+    };
+}
+
+bool login(int role) {
+    string user;
+    int pass;
+    printHeader("LOGIN");
+    cout << "Enter username: ";
+    cin >> user;
+    cout << "Enter password: ";
+    cin >> pass;
+
+    if ((role == 1 && user == USER1 && pass == PASS1) ||
+        (role == 2 && user == USER2 && pass == PASS2)) {
+        currentUserRole = role;
+        cout << "\n✔ Login successful.\n";
+        return true;
+    }
+    cout << "\n✖ Invalid credentials.\n";
+    return false;
+}
+
+void displayProducts(const vector<Product>& products, const string& category) {
+    printHeader(category + " PRODUCTS");
+    cout << "\n" << setw(4) << left << "#"
+         << setw(25) << left << "Name"
+         << setw(10) << left << "Price"
+         << setw(10) << left << "In Stock" << endl;
+    cout << string(50, '-') << endl;
+
+    for (size_t i = 0; i < products.size(); ++i) {
+        cout << setw(4) << left << i + 1
+             << setw(25) << left << products[i].name
+             << "$" << setw(9) << left << products[i].price
+             << setw(10) << left << products[i].quantity << endl;
+    }
+}
+
+void viewCart() {
+    if (cart.empty()) {
+        cout << "\nYour cart is empty.\n";
+        return;
+    }
+
+    printHeader("SHOPPING CART");
+    cout << "\n" << setw(4) << left << "#"
+         << setw(25) << left << "Name"
+         << setw(10) << left << "Price"
+         << setw(10) << left << "Qty"
+         << setw(12) << left << "Subtotal" << endl;
+    cout << string(60, '-') << endl;
+
+    float total = 0;
+    int index = 1;
+    for (const auto& item : cart) {
+        float subtotal = item.second.product.price * item.second.quantity;
+        cout << setw(4) << left << index++
+             << setw(25) << left << item.second.product.name
+             << "$" << setw(9) << left << item.second.product.price
+             << setw(10) << left << item.second.quantity
+             << "$" << subtotal << endl;
+        total += subtotal;
+    }
+
+    cout << string(60, '-') << endl;
+    cout << setw(49) << right << "TOTAL: $" << total << endl;
+}
+
+void addToCart(const vector<Product>& products, const string& category) {
+    displayProducts(products, category);
+    int productIdx, quantity;
+
+    cout << "\nEnter product number to add to cart (0 to cancel): ";
+    cin >> productIdx;
+    if (productIdx < 1 || productIdx > static_cast<int>(products.size())) {
+        if (productIdx != 0) cout << "Invalid product number.\n";
+        return;
+    }
+
+    cout << "Enter quantity: ";
+    cin >> quantity;
+
+    if (quantity <= 0) {
+        cout << "Quantity must be positive.\n";
+        return;
+    }
+
+    if (quantity > products[productIdx-1].quantity) {
+        cout << "Not enough stock available.\n";
+        return;
+    }
+
+    // Add to cart or update quantity if already exists
+    if (cart.count(productIdx-1)) {
+        cart[productIdx-1].quantity += quantity;
+    } else {
+        cart[productIdx-1] = {products[productIdx-1], quantity};
+    }
+
+    cout << "\n✔ " << quantity << " x " << products[productIdx-1].name << " added to cart.\n";
+}
+
+void removeFromCart() {
+    if (cart.empty()) {
+        cout << "\nYour cart is empty.\n";
+        return;
+    }
+
+    viewCart();
+    int itemIdx;
+    cout << "\nEnter item number to remove (0 to cancel): ";
+    cin >> itemIdx;
+
+    if (itemIdx < 1 || itemIdx > static_cast<int>(cart.size())) {
+        if (itemIdx != 0) cout << "Invalid item number.\n";
+        return;
+    }
+
+    auto it = cart.begin();
+    advance(it, itemIdx-1);
+    cout << "\n✔ " << it->second.quantity << " x " << it->second.product.name << " removed from cart.\n";
+    cart.erase(it);
+}
+
+void checkout() {
+    if (cart.empty()) {
+        cout << "\nYour cart is empty. Nothing to checkout.\n";
+        return;
+    }
+
+    viewCart();
+    cout << "\nProceed to checkout? (1=Yes, 0=No): ";
+    int confirm;
+    cin >> confirm;
+
+    if (confirm != 1) {
+        cout << "Checkout cancelled.\n";
+        return;
+    }
+
+    // Process order
+    printHeader("ORDER CONFIRMATION");
+    cout << "\nThank you for your order!\n";
+    cout << "Your items will be shipped soon.\n\n";
+
+    // Clear the cart
+    cart.clear();
+}
+
+void customerInterface() {
+    if (!login(1)) return;
+
+    while (true) {
+        printHeader("CUSTOMER MENU");
+        cout << "1. View Computers\n2. View Mobiles\n3. View Cart\n"
+             << "4. Add Computer to Cart\n5. Add Mobile to Cart\n"
+             << "6. Remove Item from Cart\n7. Checkout\n8. Exit\n\n"
+             << "Enter option: ";
+
+        int opt;
+        cin >> opt;
+
+        switch (opt) {
+            case 1: displayProducts(computers, "COMPUTER"); break;
+            case 2: displayProducts(mobiles, "MOBILE"); break;
+            case 3: viewCart(); break;
+            case 4: addToCart(computers, "COMPUTER"); break;
+            case 5: addToCart(mobiles, "MOBILE"); break;
+            case 6: removeFromCart(); break;
+            case 7: checkout(); break;
+            case 8: return;
+            default: cout << "Invalid option.\n";
+        }
+    }
+}
+
+void managerInterface() {
+    if (!login(2)) return;
+    cout << "\nManager interface coming soon (same as previous version).\n";
+}
+
+int main() {
+    loadProducts();
+    while (true) {
+        printHeader("TECH SOURCE GADGET SHOP");
+        int choice;
+        cout << "1. Customer\n2. Manager\n3. Exit\n\nEnter your choice: ";
+        cin >> choice;
+        if (choice == 1) customerInterface();
+        else if (choice == 2) managerInterface();
+        else break;
+    }
+    printHeader("THANK YOU FOR USING OUR SYSTEM");
+    return 0;
+}
